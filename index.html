@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Surprise for Chinnu ❤️</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #1a0914;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      max-width: 420px;
+      max-height: 800px;
+      background: linear-gradient(180deg, #ffdde1 0%, #ee9ca7 100%);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+      text-align: center;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      transition: all 0.4s ease;
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    h1 {
+      color: #ff3366;
+      font-size: 2.2rem;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      color: #ff3366;
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #444;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #ff3366, #ff6b8b);
+      color: white;
+      border: none;
+      padding: 15px 35px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 51, 102, 0.4);
+      transition: transform 0.1s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    #hud {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      color: #ff3366;
+      font-size: 1.2rem;
+      z-index: 5;
+    }
+
+    #game-area {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #basket {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3.2rem;
+      touch-action: none;
+      z-index: 4;
+    }
+
+    .heart-item {
+      position: absolute;
+      font-size: 2.2rem;
+      top: -50px;
+      z-index: 3;
+    }
+
+    .message-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(255, 51, 102, 0.2);
+      border: 2px dashed #ff3366;
+      width: 100%;
+      max-height: 85%;
+      overflow-y: auto;
+    }
+
+    .message-text {
+      color: #333;
+      font-size: 1.15rem;
+      line-height: 1.8;
+      text-align: center;
+      white-space: pre-line;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <!-- HUD -->
+    <div id="hud">
+      <span id="level-label">Level 1</span>
+      <span id="score-label">Hearts: 0 / 5</span>
+    </div>
+
+    <!-- GAME CANVAS -->
+    <div id="game-area">
+      <div id="basket">🧺</div>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen">
+      <h1>❤️ Surprise for Chinnu!</h1>
+      <p>Catch all the falling hearts in 3 levels to unlock a special message from me! 🥰</p>
+      <button class="btn" onclick="startGame()">Start Playing</button>
+    </div>
+
+    <!-- LEVEL COMPLETE SCREEN -->
+    <div id="level-screen" class="screen hidden">
+      <h2 id="level-title">Level Complete! 🎉</h2>
+      <p id="level-desc">Great job Chinnu! Ready for the next level? The hearts are dropping faster!</p>
+      <button class="btn" onclick="nextLevel()">Next Level</button>
+    </div>
+
+    <!-- WIN / FINAL MESSAGE SCREEN -->
+    <div id="win-screen" class="screen hidden">
+      <div class="message-card">
+        <h2>🎉 Surprise! 💖</h2>
+        
+        <div class="message-text">
+Heyy chinnu! Are you surprised..😍
+
+I know you are surprised 🥹
+
+I wanna make you smile so..🫶
+
+Random surprise for my favorite person, because you deserve unexpected happiness too.” 💗
+        </div>
+
+        <button class="btn" onclick="restartGame()">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let level = 1;
+    let score = 0;
+    let targetScore = 5;
+    let speed = 3.5;
+    let gameLoop;
+    let hearts = [];
+    let basketPos = 50;
+
+    const gameArea = document.getElementById("game-area");
+    const basket = document.getElementById("basket");
+    const startScreen = document.getElementById("start-screen");
+    const levelScreen = document.getElementById("level-screen");
+    const winScreen = document.getElementById("win-screen");
+
+    function moveBasket(e) {
+      const rect = gameArea.getBoundingClientRect();
+      let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      let posX = clientX - rect.left;
+      basketPos = Math.max(8, Math.min(92, (posX / rect.width) * 100));
+      basket.style.left = basketPos + "%";
+    }
+
+    gameArea.addEventListener("touchmove", moveBasket);
+    gameArea.addEventListener("mousemove", moveBasket);
+
+    function startGame() {
+      level = 1;
+      setupLevel();
+      hideScreens();
+      runGame();
+    }
+
+    function setupLevel() {
+      score = 0;
+      if (level === 1) { targetScore = 5; speed = 3.5; }
+      else if (level === 2) { targetScore = 8; speed = 5.5; }
+      else if (level === 3) { targetScore = 12; speed = 7.5; }
+
+      document.getElementById("level-label").innerText = `Level ${level}`;
+      document.getElementById("score-label").innerText = `Hearts: 0 / ${targetScore}`;
+    }
+
+    function runGame() {
+      gameLoop = setInterval(() => {
+        if (Math.random() < 0.08) {
+          spawnHeart();
+        }
+        updateHearts();
+      }, 1000 / 60);
+    }
+
+    function spawnHeart() {
+      const heart = document.createElement("div");
+      heart.className = "heart-item";
+      heart.innerText = "❤️";
+      heart.style.left = Math.random() * 80 + 10 + "%";
+      heart.style.top = "-50px";
+      gameArea.appendChild(heart);
+      hearts.push(heart);
+    }
+
+    function updateHearts() {
+      const areaHeight = gameArea.clientHeight;
+
+      for (let i = hearts.length - 1; i >= 0; i--) {
+        let h = hearts[i];
+        let top = parseFloat(h.style.top) || -50;
+        top += speed;
+        h.style.top = top + "px";
+
+        if (top >= areaHeight - 80 && top <= areaHeight - 40) {
+          let heartLeft = parseFloat(h.style.left);
+          if (Math.abs(heartLeft - basketPos) < 14) {
+            h.remove();
+            hearts.splice(i, 1);
+            score++;
+            document.getElementById("score-label").innerText = `Hearts: ${score} / ${targetScore}`;
+
+            if (score >= targetScore) {
+              clearInterval(gameLoop);
+              clearAllHearts();
+              if (level < 3) {
+                showLevelUp();
+              } else {
+                winScreen.classList.remove("hidden");
+              }
+            }
+            continue;
+          }
+        }
+
+        if (top > areaHeight) {
+          h.remove();
+          hearts.splice(i, 1);
+        }
+      }
+    }
+
+    function clearAllHearts() {
+      hearts.forEach(h => h.remove());
+      hearts = [];
+    }
+
+    function showLevelUp() {
+      document.getElementById("level-title").innerText = `Level ${level} Passed! 🎉`;
+      document.getElementById("level-desc").innerText = `Great job Chinnu! Level ${level + 1} is up next. The hearts will fall faster!`;
+      levelScreen.classList.remove("hidden");
+    }
+
+    function nextLevel() {
+      level++;
+      setupLevel();
+      hideScreens();
+      runGame();
+    }
+
+    function restartGame() {
+      clearAllHearts();
+      hideScreens();
+      startScreen.classList.remove("hidden");
+    }
+
+    function hideScreens() {
+      startScreen.classList.add("hidden");
+      levelScreen.classList.add("hidden");
+      winScreen.classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
